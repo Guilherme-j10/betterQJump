@@ -21,8 +21,8 @@
       {
         "command": "hop",
         "key": "ctrl+s",
-        "when": "editorTextFocus && !editorHasSelection",
-        "win": "shift+s",
+        "when": "editorTextFocus && !editorHasSelection && vim.mode == 'Normal'",
+        "win": "ctrl+s",
         "mac": "cmd+s",
         "linux": "shift+S"
       }
