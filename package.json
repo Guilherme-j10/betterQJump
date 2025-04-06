@@ -22,7 +22,7 @@
         "command": "hop",
         "key": "ctrl+s",
         "when": "editorTextFocus && !editorHasSelection && vim.mode == 'Normal'",
-        "win": "ctrl+s",
+        "win": "shift+s",
         "mac": "cmd+s",
         "linux": "shift+S"
       }

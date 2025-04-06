@@ -17,26 +17,16 @@ export function activate(context: vscode.ExtensionContext) {
 
 		if (editor) {
 			let position = [] as Position[];
-			let decorations = [] as vscode.TextEditorDecorationType[];
+			let decorations = [] as {
+				decoration: vscode.TextEditorDecorationType,
+				rangeReference: vscode.Range,
+				replacedText: string
+			}[];
 			let decorationsHightlight = [] as vscode.TextEditorDecorationType[];
 
 			editor.visibleRanges.forEach((range) => {
 				for (let lineIndex = range.start.line; lineIndex <= range.end.line; lineIndex++) {
 					const lineContent = editor.document.lineAt(lineIndex).text;
-
-					const decorator = vscode.window.createTextEditorDecorationType({
-						color: "#ffffff57"
-					});
-
-					editor.setDecorations(decorator, [
-						new vscode.Range(
-							lineIndex,
-							0,
-							lineIndex,
-							lineContent.length
-						)
-					]);
-					decorationsHightlight.push(decorator);
 
 					const wordRegex = /[a-zA-Z0-9_]+/g;
 					let match;
@@ -73,31 +63,55 @@ export function activate(context: vscode.ExtensionContext) {
 				coords: position[index],
 			}));
 
-			coordsMetadata.forEach((metadata) => {
-				const decorator = vscode.window.createTextEditorDecorationType({
-					after: {
-						contentText: metadata.label,
+			editor.edit((editBuilder) => {
+				coordsMetadata.forEach((metadata) => {
+					const rangeCoords = new vscode.Range(
+						metadata.coords.line,
+						metadata.coords.character,
+						metadata.coords.line,
+						metadata.coords.character + metadata.label.length
+					);
+
+					const codeToBeReplaced = editor.document.getText(rangeCoords);
+					editBuilder.replace(rangeCoords, metadata.label);
+
+					const decorator = vscode.window.createTextEditorDecorationType({
 						color: "cyan",
-						backgroundColor: "rgba(0, 0, 0, 0.1)",
-						margin: "0 0 0 0",
-					},
-					textDecoration: "position: absolute; translateY(50px)",
+						textDecoration: "position: absolute; translateY(50px)",
+					});
+
+					editor.setDecorations(decorator, [rangeCoords]);
+					decorations.push({
+						decoration: decorator,
+						rangeReference: rangeCoords,
+						replacedText: codeToBeReplaced,
+					});
+				})
+			});
+
+			position.forEach((pos) => {
+				const lineContent = editor.document.lineAt(pos.line).text;
+				const decorator = vscode.window.createTextEditorDecorationType({
+					color: "#ffffff57"
 				});
 
 				editor.setDecorations(decorator, [
 					new vscode.Range(
-						metadata.coords.line,
-						metadata.coords.character,
-						metadata.coords.line,
-						metadata.coords.character
+						pos.line,
+						0,
+						pos.line,
+						lineContent.length
 					)
 				]);
-				decorations.push(decorator);
+				decorationsHightlight.push(decorator);
 			});
 
 			const cleanUpDecorations = () => {
-				decorations.forEach((decorator) => {
-					decorator.dispose();
+				editor.edit((editBuilder) => {
+					decorations.forEach((decorator) => {
+						decorator.decoration.dispose();
+						editBuilder.replace(decorator.rangeReference, decorator.replacedText);
+					});
 				});
 				decorationsHightlight.forEach((decorator) => {
 					decorator.dispose();
