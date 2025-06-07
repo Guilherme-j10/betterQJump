@@ -9,6 +9,26 @@ type Position = {
 export function activate(context: vscode.ExtensionContext) {
 	const disposable = vscode.commands.registerCommand('hop', async () => {
 		const editor = vscode.window.activeTextEditor;
+		const lintersToHandle = [
+			"rust-analyzer.diagnostics.enable",
+			"yaml.validate",
+			"toml.validate",
+			"python.linting.enabled",
+			"javascript.validate.enable",
+			"typescript.validate.enable",
+			"css.validate",
+			"less.validate",
+			"scss.validate",
+			"php.validate.enable",
+			"json.validate.enable",
+		];
+
+		const handleLinters = (action: boolean) => {
+			const config = vscode.workspace.getConfiguration();
+			for (const key of lintersToHandle) {
+				config.update(key, action, vscode.ConfigurationTarget.Global);
+			}
+		};
 
 		if (!editor) {
 			vscode.window.showErrorMessage("No active editor found.");
@@ -23,6 +43,7 @@ export function activate(context: vscode.ExtensionContext) {
 				replacedText: string
 			}[];
 			let decorationsHightlight = [] as vscode.TextEditorDecorationType[];
+			handleLinters(false);
 
 			editor.visibleRanges.forEach((range) => {
 				for (let lineIndex = range.start.line; lineIndex <= range.end.line; lineIndex++) {
@@ -126,6 +147,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 			if (!pickedLabel) {
 				cleanUpDecorations();
+				handleLinters(true);
 				return;
 			}
 
@@ -134,6 +156,7 @@ export function activate(context: vscode.ExtensionContext) {
 			if (!foundLabel) {
 				vscode.window.showErrorMessage("Invalid label.");
 				cleanUpDecorations();
+				handleLinters(true);
 				return;
 			}
 
@@ -150,6 +173,7 @@ export function activate(context: vscode.ExtensionContext) {
 			));
 
 			cleanUpDecorations();
+			handleLinters(true);
 		}
 	});
 
